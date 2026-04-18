@@ -199,6 +199,8 @@
   </div>
 
   <script>
+const API_URL = "https://script.google.com/macros/s/AKfycbzHFZBfV43Yga6iSGNu-j75jPRCS1vhz5UzsUnnAuPJbZaHyuzDxPlncDWtyvxdPa6f/exec";
+    
     let LINK_PASANG_SEKARANG = ""; 
     let globalPrediksiData = [];
     let currentActiveTab = 0;
@@ -208,16 +210,21 @@
     };
 
     function initApp() {
-      showSkeletons();
-      const savedTheme = localStorage.getItem('app_theme');
-      if (savedTheme === 'light') { document.body.classList.add('light-mode'); updateThemeIcon(true); }
-      google.script.run.withSuccessHandler(s => {
-        if(s && s.wa) { updateDynamicLinks(s.wa, s.referral || ""); }
-      }).getPublicSettings();
-      const savedSandi = localStorage.getItem('member_sandi');
-      if (savedSandi) { autoLogin(savedSandi); } 
-      else { document.getElementById('login-screen').style.display = 'flex'; }
-    }
+  showSkeletons();
+  const savedTheme = localStorage.getItem('app_theme');
+  if (savedTheme === 'light') { document.body.classList.add('light-mode'); updateThemeIcon(true); }
+  
+  // Mengganti google.script.run
+  fetch(`${API_URL}?action=getPublicSettings`)
+    .then(res => res.json())
+    .then(s => {
+      if(s && s.wa) { updateDynamicLinks(s.wa, s.referral || ""); }
+    });
+
+  const savedSandi = localStorage.getItem('member_sandi');
+  if (savedSandi) { autoLogin(savedSandi); } 
+  else { document.getElementById('login-screen').style.display = 'flex'; }
+}
 
     function showSkeletons() {
       for(let i=0; i<3; i++) {
@@ -232,21 +239,30 @@
       LINK_PASANG_SEKARANG = ref;
     }
 
-    function autoLogin(sandi) {
-      google.script.run.withSuccessHandler(response => {
-        if (response === "SALAH") { localStorage.removeItem('member_sandi'); document.getElementById('login-screen').style.display = 'flex'; } 
-        else { handleDataSuccess(response); }
-      }).getPrediksiData(sandi);
-    }
+ function autoLogin(sandi) {
+  fetch(`${API_URL}?action=getPrediksiData&sandi=${sandi}`)
+    .then(res => res.json())
+    .then(response => {
+      if (response === "SALAH") { 
+        localStorage.removeItem('member_sandi'); 
+        document.getElementById('login-screen').style.display = 'flex'; 
+      } else { handleDataSuccess(response); }
+    });
+}
 
-    function manualLogin() {
-      let sandi = document.getElementById('sandiInput').value;
-      google.script.run.withSuccessHandler(response => {
-        if (response === "SALAH") { document.getElementById('pesan-error').style.display = 'block'; } 
-        else { localStorage.setItem('member_sandi', sandi); handleDataSuccess(response); }
-      }).getPrediksiData(sandi);
-    }
-
+function manualLogin() {
+  let sandi = document.getElementById('sandiInput').value;
+  fetch(`${API_URL}?action=getPrediksiData&sandi=${sandi}`)
+    .then(res => res.json())
+    .then(response => {
+      if (response === "SALAH") { 
+        document.getElementById('pesan-error').style.display = 'block'; 
+      } else { 
+        localStorage.setItem('member_sandi', sandi); 
+        handleDataSuccess(response); 
+      }
+    });
+}
     function handleDataSuccess(response) {
       document.getElementById('login-screen').style.display = 'none';
       globalPrediksiData = response.cards;
