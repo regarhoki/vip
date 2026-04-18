@@ -30,7 +30,31 @@
       --neon-orange: #fb923c;
       --neon-blue: #38bdf8;
     }
+  /* ANIMASI LOADING PADA TOMBOL */
+    .btn-loading {
+      position: relative;
+      color: transparent !important; /* Sembunyikan teks sementara */
+      pointer-events: none; /* Cegah klik ganda */
+      opacity: 0.8;
+    }
 
+    .btn-loading::after {
+      content: "";
+      position: absolute;
+      width: 20px;
+      height: 20px;
+      top: 50%;
+      left: 50%;
+      margin: -10px 0 0 -10px;
+      border: 3px solid rgba(0,0,0,0.2);
+      border-top-color: #000;
+      border-radius: 50%;
+      animation: spin-loading 0.8s linear infinite;
+    }
+
+    @keyframes spin-loading {
+      to { transform: rotate(360deg); }
+    }
     body.light-mode {
       --bg-color: #f0f2f5;
       --text-color: #1a1a1a;
@@ -252,15 +276,43 @@ const API_URL = "https://script.google.com/macros/s/AKfycbzHFZBfV43Yga6iSGNu-j75
 
 function manualLogin() {
   let sandi = document.getElementById('sandiInput').value;
+  let btn = document.querySelector('.login-box button');
+  let pesanError = document.getElementById('pesan-error');
+
+  if (!sandi) {
+    pesanError.style.display = 'block';
+    pesanError.innerText = 'MASUKKAN PIN TERLEBIH DAHULU';
+    return;
+  }
+
+  // --- START LOADING ---
+  btn.classList.add('btn-loading'); // Munculkan spinner
+  pesanError.style.display = 'none';
+
   fetch(`${API_URL}?action=getPrediksiData&sandi=${sandi}`)
     .then(res => res.json())
     .then(response => {
-      if (response === "SALAH") { 
-        document.getElementById('pesan-error').style.display = 'block'; 
-      } else { 
-        localStorage.setItem('member_sandi', sandi); 
-        handleDataSuccess(response); 
+      // --- STOP LOADING ---
+      btn.classList.remove('btn-loading');
+
+      if (response === "SALAH") {
+        pesanError.style.display = 'block';
+        pesanError.style.color = '#ff4444';
+        pesanError.innerText = 'PIN INVALID! HUBUNGI ADMIN';
+      } else if (response === "ERROR") {
+        pesanError.style.display = 'block';
+        pesanError.innerText = 'SERVER SIBUK, COBA LAGI';
+      } else {
+        localStorage.setItem('member_sandi', sandi);
+        handleDataSuccess(response);
       }
+    })
+    .catch(err => {
+      // --- STOP LOADING ---
+      btn.classList.remove('btn-loading');
+      pesanError.style.display = 'block';
+      pesanError.innerText = 'KONEKSI GAGAL! CEK SINYAL';
+      console.error(err);
     });
 }
     function handleDataSuccess(response) {
