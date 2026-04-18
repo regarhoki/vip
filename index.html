@@ -34,6 +34,13 @@
             --neon-orange: #fb923c;
             --neon-blue: #38bdf8;
         }
+        /* ANIMASI PULSE MERAH UNTUK ADMIN */
+    @keyframes pulse-red-admin {
+      0% { background-color: #ff0000; box-shadow: 0 0 0 0 rgba(255, 0, 0, 0.7); }
+      70% { background-color: #aa0000; box-shadow: 0 0 0 15px rgba(255, 0, 0, 0); }
+      100% { background-color: #ff0000; box-shadow: 0 0 0 0 rgba(255, 0, 0, 0); }
+    }
+    .btn-pulse-red { animation: pulse-red-admin 1.5s infinite !important; color: #fff !important; }
 
         body.light-mode {
             --bg-color: #f0f2f5;
@@ -437,19 +444,24 @@
         }
 
         /* 6. UI RENDERING FUNCTIONS */
-        function generateCardHTML(item, tabIdx) {
-            const colors = ['var(--neon-yellow)', 'var(--neon-orange)', 'var(--neon-blue)'];
-            const btnCol = colors[tabIdx] || 'var(--accent-gold)';
-            const now = new Date(); const utc = now.getTime() + (now.getTimezoneOffset() * 60000);
-            const nowWIB = new Date(utc + (3600000 * 7));
-            const isSgpLibur = item.pasaran.toLowerCase().includes("singapore") && (nowWIB.getDay() === 2 || nowWIB.getDay() === 5);
-            const btnLabel = isSgpLibur ? "SGP LIBUR" : "PREDIKSI";
-            const btnStyle = isSgpLibur ? "background:#222;color:#555;box-shadow:none;" : `background:${btnCol}`;
-            return `<div class="card-mini" data-pasaran="${item.pasaran}" onclick="showModalDirect('${btoa(JSON.stringify(item))}')">
-                <div class="cm-header"><div class="cm-title">${item.pasaran}</div><div class="cm-date">${item.tanggal}</div></div>
-                <div class="cm-timer-box"><div class="cm-timer-value">00:00:00</div></div>
-                <button class="cm-btn" style="${btnStyle}">${btnLabel}</button></div>`;
-        }
+     function generateCardHTML(item, tabIdx) {
+      const colors = ['var(--neon-yellow)', 'var(--neon-orange)', 'var(--neon-blue)'];
+      const btnCol = colors[tabIdx] || 'var(--accent-gold)';
+      const now = new Date(); const utc = now.getTime() + (now.getTimezoneOffset() * 60000);
+      const nowWIB = new Date(utc + (3600000 * 7));
+      
+      const isSgpLibur = item.pasaran.toLowerCase().includes("singapore") && (nowWIB.getDay() === 2 || nowWIB.getDay() === 5);
+      const isKosong = !item.bbfs || item.bbfs.trim() === "" || item.bbfs === "-";
+      
+      let btnLabel = isSgpLibur ? "SGP LIBUR" : (isKosong ? "HUBUNGI ADMIN" : "PREDIKSI");
+      let btnClass = "cm-btn" + (isKosong && !isSgpLibur ? " btn-pulse-red" : "");
+      let btnStyle = isSgpLibur ? "background:#222;color:#555;box-shadow:none;" : (isKosong ? "" : `background:${btnCol}; color:#000;`);
+
+      return `<div class="card-mini" data-pasaran="${item.pasaran}" onclick="showModalDirect('${btoa(JSON.stringify(item))}')">
+        <div class="cm-header"><div class="cm-title">${item.pasaran}</div><div class="cm-date">${item.tanggal}</div></div>
+        <div class="cm-timer-box"><div class="cm-timer-value">00:00:00</div></div>
+        <button class="${btnClass}" style="${btnStyle}">${btnLabel}</button></div>`;
+    }
 
         function renderGrid(idx) {
             const g = document.getElementById('g' + idx);
@@ -482,37 +494,45 @@
 
         /* 7. MODAL & THEME FUNCTIONS */
         function showModalDirect(enc) {
-            const it = JSON.parse(atob(enc));
-            const now = new Date(); const utc = now.getTime() + (now.getTimezoneOffset() * 60000);
-            const nowWIB = new Date(utc + (3600000 * 7));
-            if (it.pasaran.toLowerCase().includes("singapore") && (nowWIB.getDay() === 2 || nowWIB.getDay() === 5)) {
-                document.getElementById('modalBody').innerHTML = `<div style="padding:40px 20px;text-align:center;font-weight:900;">PASARAN SINGAPORE LIBUR<br>HARI SELASA & JUMAT</div>`;
-            } else {
-                document.getElementById('modalBody').innerHTML = `
-                    <div class="modal-header"><h3>${it.pasaran}</h3><p>${it.tanggal}</p></div>
-                    <div class="divider">POLA TARUNG</div>
-                    <table class="modal-table">
-                        <tr><td class="label">AS</td><td class="val-text">${it.as||'-'}</td></tr>
-                        <tr><td class="label">KOP</td><td class="val-text">${it.kop||'-'}</td></tr>
-                        <tr><td class="label">KEPALA</td><td class="val-text">${it.kepala||'-'}</td></tr>
-                        <tr><td class="label">EKOR</td><td class="val-text">${it.ekor||'-'}</td></tr>
-                    </table>
-                    <div class="divider">RANGKUMAN</div>
-                    <table class="modal-table">
-                        <tr><td class="label">BBFS 7D</td><td class="val-text">${it.bbfs||'-'}</td></tr>
-                        <tr><td class="label">AI / AM</td><td class="val-text">${it.ai||'-'}</td></tr>
-                        <tr><td class="label">4D (BB)</td><td class="val-text">${it.d4||'-'}</td></tr>
-                        <tr><td class="label">3D (BB)</td><td class="val-text">${it.d3||'-'}</td></tr>
-                        <tr><td class="label">2D (BB)</td><td class="val-text">${it.d2||'-'}</td></tr>
-                        <tr><td class="label">C. BEBAS</td><td class="val-text">${it.c_bebas||'-'}</td></tr>
-                        <tr><td class="label">C. MACAU</td><td class="val-text">${it.c_macau||'-'}</td></tr>
-                        <tr><td class="label">C. SHIO</td><td class="val-text">${it.c_shio||'-'}</td></tr>
-                        <tr><td class="label">I. TWIN</td><td class="val-text">${it.twin||'-'}</td></tr>
-                    </table>
-                    <a href="${LINK_PASANG_SEKARANG}" target="_blank" class="btn-pasang">HAJAR SEKARANG 🎰</a>`;
-            }
-            document.getElementById('prediksiModal').style.display = 'flex';
-        }
+      const it = JSON.parse(atob(enc));
+      const now = new Date(); const utc = now.getTime() + (now.getTimezoneOffset() * 60000);
+      const nowWIB = new Date(utc + (3600000 * 7));
+      const modalBody = document.getElementById('modalBody');
+      const waUrl = document.getElementById('wa-floating').href;
+
+      if (it.pasaran.toLowerCase().includes("singapore") && (nowWIB.getDay() === 2 || nowWIB.getDay() === 5)) {
+        modalBody.innerHTML = `<div style="padding:40px 20px;text-align:center;font-weight:900;">PASARAN SINGAPORE LIBUR<br>HARI SELASA & JUMAT</div>`;
+      } 
+      else if (!it.bbfs || it.bbfs.trim() === "" || it.bbfs === "-") {
+        modalBody.innerHTML = `
+          <div class="modal-header"><h3 style="color:#ff4444;">DATA BELUM SIAP</h3></div>
+          <div style="padding:20px; text-align:center;">
+            <p style="font-weight:900; color:var(--text-color);">ANGKA SEDANG DIRACIK<br>SILAHKAN HUBUNGI WA REGAR</p>
+            <a href="${waUrl}" target="_blank" class="btn-pasang" style="background:#25d366; color:#fff;">KIRIM PESAN WA</a>
+          </div>`;
+      } 
+      else {
+        modalBody.innerHTML = `
+          <div class="modal-header"><h3>${it.pasaran}</h3><p>${it.tanggal}</p></div>
+          <div class="divider">POLA TARUNG</div>
+          <table class="modal-table">
+            <tr><td class="label">AS</td><td class="val-text">${it.as||'-'}</td></tr><tr><td class="label">KOP</td><td class="val-text">${it.kop||'-'}</td></tr>
+            <tr><td class="label">KEPALA</td><td class="val-text">${it.kepala||'-'}</td></tr><tr><td class="label">EKOR</td><td class="val-text">${it.ekor||'-'}</td></tr>
+          </table>
+          <div class="divider">RANGKUMAN</div>
+          <table class="modal-table">
+            <tr><td class="label">BBFS 7D</td><td class="val-text">${it.bbfs||'-'}</td></tr>
+            <tr><td class="label">AI / AM</td><td class="val-text">${it.ai||'-'}</td></tr>
+            <tr><td class="label">4D (BB)</td><td class="val-text">${it.d4||'-'}</td></tr>
+            <tr><td class="label">2D (BB)</td><td class="val-text">${it.d2||'-'}</td></tr>
+            <tr><td class="label">C. BEBAS</td><td class="val-text">${it.c_bebas||'-'}</td></tr>
+            <tr><td class="label">C. MACAU</td><td class="val-text">${it.c_macau||'-'}</td></tr>
+            <tr><td class="label">I. TWIN</td><td class="val-text">${it.twin||'-'}</td></tr>
+          </table>
+          <a href="${LINK_PASANG_SEKARANG}" target="_blank" class="btn-pasang">HAJAR SEKARANG 🎰</a>`;
+      }
+      document.getElementById('prediksiModal').style.display = 'flex';
+    }
 
         function closeModal() { document.getElementById('prediksiModal').style.display = 'none'; }
         
